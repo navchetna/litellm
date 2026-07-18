@@ -57,8 +57,8 @@ describe("ChatShell", () => {
         <div />
       </ChatShell>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Integrations" }));
-    expect(mockPush).toHaveBeenCalledWith("/ui/chat/integrations");
+    fireEvent.click(screen.getByRole("button", { name: "Credentials" }));
+    expect(mockPush).toHaveBeenCalledWith("/ui/chat/credentials");
 
     fireEvent.click(screen.getByRole("button", { name: "Usage" }));
     expect(mockPush).toHaveBeenCalledWith("/ui/chat/usage");

@@ -28,7 +28,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, type UIEvent 
 import { BarChart } from "@/components/shared/charts";
 import { Card as ShadcnCard, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { useAgents } from "@/app/(dashboard)/hooks/agents/useAgents";
 import { useCustomers } from "@/app/(dashboard)/hooks/customers/useCustomers";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import { useCurrentUser } from "@/app/(dashboard)/hooks/users/useCurrentUser";
@@ -87,7 +86,6 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
 
   const [allTags, setAllTags] = useState<EntityList[]>([]);
   const { data: customers = [] } = useCustomers();
-  const { data: agentsResponse } = useAgents();
   const { data: currentUser } = useCurrentUser();
   const isAdmin = all_admin_roles.includes(userRole || "");
   const canViewTagUsage = isAdmin || internalUserRoles.includes(userRole || "");
@@ -938,19 +936,6 @@ const UsagePage: React.FC<UsagePageProps> = ({ teams, organizations }) => {
                 dateValue={dateValue}
               />
             </>
-          )}
-          {usageView === "agent" && (
-            <EntityUsage
-              accessToken={accessToken}
-              entityType="agent"
-              userID={userID}
-              userRole={userRole}
-              entityList={
-                agentsResponse?.agents?.map((agent) => ({ label: agent.agent_name, value: agent.agent_id })) || null
-              }
-              premiumUser={premiumUser}
-              dateValue={dateValue}
-            />
           )}
           {/* User Usage Panel */}
           {usageView === "user" && (

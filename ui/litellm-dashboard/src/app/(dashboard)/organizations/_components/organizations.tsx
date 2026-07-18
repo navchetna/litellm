@@ -138,27 +138,11 @@ const OrganizationsTable: React.FC<OrganizationsTableProps> = ({
     try {
       if (!accessToken) return;
 
-      // Transform allowed_vector_store_ids and allowed_mcp_servers_and_groups into object_permission
-      if (
-        (values.allowed_vector_store_ids && values.allowed_vector_store_ids.length > 0) ||
-        (values.allowed_mcp_servers_and_groups &&
-          (values.allowed_mcp_servers_and_groups.servers?.length > 0 ||
-            values.allowed_mcp_servers_and_groups.accessGroups?.length > 0))
-      ) {
+      // Transform allowed_vector_store_ids into object_permission
+      if (values.allowed_vector_store_ids && values.allowed_vector_store_ids.length > 0) {
         values.object_permission = {};
-        if (values.allowed_vector_store_ids && values.allowed_vector_store_ids.length > 0) {
-          values.object_permission.vector_stores = values.allowed_vector_store_ids;
-          delete values.allowed_vector_store_ids;
-        }
-        if (values.allowed_mcp_servers_and_groups) {
-          if (values.allowed_mcp_servers_and_groups.servers?.length > 0) {
-            values.object_permission.mcp_servers = values.allowed_mcp_servers_and_groups.servers;
-          }
-          if (values.allowed_mcp_servers_and_groups.accessGroups?.length > 0) {
-            values.object_permission.mcp_access_groups = values.allowed_mcp_servers_and_groups.accessGroups;
-          }
-          delete values.allowed_mcp_servers_and_groups;
-        }
+        values.object_permission.vector_stores = values.allowed_vector_store_ids;
+        delete values.allowed_vector_store_ids;
       }
 
       await organizationCreateCall(accessToken, values);
@@ -484,27 +468,6 @@ const OrganizationsTable: React.FC<OrganizationsTableProps> = ({
               value={form.getFieldValue("allowed_vector_store_ids")}
               accessToken={accessToken || ""}
               placeholder="Select vector stores (optional)"
-            />
-          </Form.Item>
-
-          <Form.Item
-            label={
-              <span>
-                Allowed MCP Servers{" "}
-                <Tooltip title="Select which MCP servers and access groups this organization can access by default.">
-                  <InfoCircleOutlined style={{ marginLeft: "4px" }} />
-                </Tooltip>
-              </span>
-            }
-            name="allowed_mcp_servers_and_groups"
-            className="mt-4"
-            help="Select MCP servers and access groups this organization can access."
-          >
-            <MCPServerSelector
-              onChange={(values) => form.setFieldValue("allowed_mcp_servers_and_groups", values)}
-              value={form.getFieldValue("allowed_mcp_servers_and_groups")}
-              accessToken={accessToken || ""}
-              placeholder="Select MCP servers and access groups (optional)"
             />
           </Form.Item>
 

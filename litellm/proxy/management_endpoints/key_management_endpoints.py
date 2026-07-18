@@ -37,11 +37,12 @@ from litellm.constants import (
 )
 from litellm.litellm_core_utils.duration_parser import duration_in_seconds
 from litellm.litellm_core_utils.safe_json_dumps import safe_dumps
-from litellm.proxy._experimental.mcp_server.db import (
-    rotate_mcp_server_credentials_master_key,
-    rotate_mcp_user_credentials_master_key,
-    rotate_mcp_user_env_vars_master_key,
-)
+# MCP functionality removed
+# from litellm.proxy._experimental.mcp_server.db import (
+#     rotate_mcp_server_credentials_master_key,
+#     rotate_mcp_user_credentials_master_key,
+#     rotate_mcp_user_env_vars_master_key,
+# )
 from litellm.proxy._types import *
 from litellm.proxy._types import LiteLLM_VerificationToken, hash_token
 from litellm.proxy.auth.auth_checks import (
@@ -4214,33 +4215,33 @@ async def _rotate_master_key(
                     data={"param_value": prisma.Json(encrypted_env_vars)},  # type: ignore[attr-defined]
                 )
 
-    # 4. process MCP server table
-    try:
-        await rotate_mcp_server_credentials_master_key(
-            prisma_client=prisma_client,
-            touched_by=user_api_key_dict.user_id or LITELLM_PROXY_ADMIN_NAME,
-            new_master_key=new_master_key,
-        )
-    except Exception as e:
-        verbose_proxy_logger.warning("Failed to rotate MCP server credentials: %s", str(e))
+    # 4. process MCP server table - MCP functionality removed
+    # try:
+    #     await rotate_mcp_server_credentials_master_key(
+    #         prisma_client=prisma_client,
+    #         touched_by=user_api_key_dict.user_id or LITELLM_PROXY_ADMIN_NAME,
+    #         new_master_key=new_master_key,
+    #     )
+    # except Exception as e:
+    #     verbose_proxy_logger.warning("Failed to rotate MCP server credentials: %s", str(e))
 
-    # 4b. process MCP user-scoped credentials table (BYOK + OAuth2 tokens)
-    try:
-        await rotate_mcp_user_credentials_master_key(
-            prisma_client=prisma_client,
-            new_master_key=new_master_key,
-        )
-    except Exception as e:
-        verbose_proxy_logger.warning("Failed to rotate MCP user credentials: %s", str(e))
+    # 4b. process MCP user-scoped credentials table (BYOK + OAuth2 tokens) - MCP functionality removed
+    # try:
+    #     await rotate_mcp_user_credentials_master_key(
+    #         prisma_client=prisma_client,
+    #         new_master_key=new_master_key,
+    #     )
+    # except Exception as e:
+    #     verbose_proxy_logger.warning("Failed to rotate MCP user credentials: %s", str(e))
 
-    # 4c. process MCP per-user environment variables table
-    try:
-        await rotate_mcp_user_env_vars_master_key(
-            prisma_client=prisma_client,
-            new_master_key=new_master_key,
-        )
-    except Exception as e:
-        verbose_proxy_logger.warning("Failed to rotate MCP user env vars: %s", str(e))
+    # 4c. process MCP per-user environment variables table - MCP functionality removed
+    # try:
+    #     await rotate_mcp_user_env_vars_master_key(
+    #         prisma_client=prisma_client,
+    #         new_master_key=new_master_key,
+    #     )
+    # except Exception as e:
+    #     verbose_proxy_logger.warning("Failed to rotate MCP user env vars: %s", str(e))
 
     # 5. process credentials table
     try:

@@ -3,8 +3,6 @@ export interface AccessGroup {
   name: string;
   description: string;
   modelIds: string[];
-  mcpServerIds: string[];
-  agentIds: string[];
   keyIds: string[];
   teamIds: string[];
   createdAt: string;

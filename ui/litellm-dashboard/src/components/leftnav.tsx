@@ -25,7 +25,6 @@ import {
   Activity,
   BarChart3,
   Bell,
-  Blocks,
   Bot,
   BookOpen,
   Building2,
@@ -48,7 +47,6 @@ import {
   Route,
   ScrollText,
   Search,
-  Server,
   Settings as SettingsIcon,
   Shield,
   ShieldCheck,
@@ -57,7 +55,6 @@ import {
   User,
   Users,
   Wallet,
-  Wrench,
   Workflow,
 } from "lucide-react";
 import Link from "next/link";
@@ -131,25 +128,6 @@ const menuGroups: MenuGroup[] = [
         icon: <Network {...ICON} />,
         roles: rolesAllowedToViewWriteScopedPages,
       },
-      {
-        key: "agentic",
-        page: "agentic",
-        label: "Agentic",
-        icon: <Bot {...ICON} />,
-        children: [
-          {
-            key: "agents",
-            page: "agents",
-            label: "Agents",
-            icon: <Bot {...ICON} />,
-            roles: rolesAllowedToViewWriteScopedPages,
-          },
-          { key: "workflows", page: "workflows", label: "Workflow Runs", icon: <Workflow {...ICON} /> },
-          { key: "memory", page: "memory", label: "Memory", icon: <Database {...ICON} /> },
-        ],
-      },
-      { key: "mcp-servers", page: "mcp-servers", label: "MCP Servers", icon: <Server {...ICON} /> },
-      { key: "skills", page: "skills", label: "Skills", icon: <Blocks {...ICON} />, roles: all_admin_roles },
       { key: "guardrails", page: "guardrails", label: "Guardrails", icon: <Shield {...ICON} /> },
       {
         key: "policies",
@@ -157,17 +135,6 @@ const menuGroups: MenuGroup[] = [
         label: "Policies",
         icon: <ScrollText {...ICON} />,
         roles: all_admin_roles,
-      },
-      {
-        key: "tools",
-        page: "tools",
-        label: "Tools",
-        icon: <Wrench {...ICON} />,
-        children: [
-          { key: "search-tools", page: "search-tools", label: "Search Tools", icon: <Search {...ICON} /> },
-          { key: "vector-stores", page: "vector-stores", label: "Vector Stores", icon: <Database {...ICON} /> },
-          { key: "tool-policies", page: "tool-policies", label: "Tool Policies", icon: <ShieldCheck {...ICON} /> },
-        ],
       },
     ],
   },

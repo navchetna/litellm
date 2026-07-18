@@ -42,8 +42,6 @@ function mapResponseToAccessGroup(r: AccessGroupResponse): AccessGroup {
     name: r.access_group_name,
     description: r.description ?? "",
     modelIds: r.access_model_names,
-    mcpServerIds: r.access_mcp_server_ids,
-    agentIds: r.access_agent_ids,
     keyIds: r.assigned_key_ids,
     teamIds: r.assigned_team_ids,
     createdAt: r.created_at,
@@ -160,8 +158,6 @@ export function AccessGroupsPage() {
         cell: ({ row }) => {
           const record = row.original;
           const modelIds = record.modelIds ?? [];
-          const mcpServerIds = record.mcpServerIds ?? [];
-          const agentIds = record.agentIds ?? [];
           return (
             <Flex gap={12} align="center">
               <Tooltip title={`${modelIds?.length} Models`}>
@@ -169,22 +165,6 @@ export function AccessGroupsPage() {
                   <Flex align="center" gap={6}>
                     <LayersIcon size={14} />
                     {modelIds?.length}
-                  </Flex>
-                </Tag>
-              </Tooltip>
-              <Tooltip title={`${mcpServerIds?.length} MCP Servers`}>
-                <Tag color="cyan" style={{ fontSize: 14, padding: "2px 8px", margin: 0 }}>
-                  <Flex align="center" gap={6}>
-                    <ServerIcon size={14} />
-                    {mcpServerIds?.length}
-                  </Flex>
-                </Tag>
-              </Tooltip>
-              <Tooltip title={`${agentIds?.length} Agents`}>
-                <Tag color="purple" style={{ fontSize: 14, padding: "2px 8px", margin: 0 }}>
-                  <Flex align="center" gap={6}>
-                    <BotIcon size={14} />
-                    {agentIds?.length}
                   </Flex>
                 </Tag>
               </Tooltip>

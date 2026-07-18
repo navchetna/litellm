@@ -430,23 +430,16 @@ from litellm.proxy.management_endpoints.ui_sso import router as ui_sso_router
 from litellm.proxy.management_endpoints.user_agent_analytics_endpoints import (
     router as user_agent_analytics_router,
 )
-from litellm.proxy.management_endpoints.workflow_management_endpoints import (
-    router as workflow_management_router,
-)
 from litellm.proxy.management_helpers.audit_logs import (
     create_audit_log_for_update,
     create_object_audit_log,
 )
-from litellm.proxy.memory.memory_endpoints import router as memory_router
 from litellm.proxy.middleware.billable_request_metrics_middleware import (
     BillableRequestMetricsMiddleware,
     BillingRecorder,
 )
 from litellm.proxy.plugin_routes import (
     register_plugins_from_config,
-)
-from litellm.proxy.plugin_routes import (
-    router as plugin_router,
 )
 
 try:
@@ -497,7 +490,6 @@ from litellm.proxy.rag_endpoints.endpoints import router as rag_router
 from litellm.proxy.rerank_endpoints.endpoints import router as rerank_router
 from litellm.proxy.response_api_endpoints.endpoints import router as response_router
 from litellm.proxy.route_llm_request import route_request
-from litellm.proxy.search_endpoints.endpoints import router as search_router
 from litellm.proxy.shutdown.graceful_shutdown_manager import GracefulShutdownManager
 from litellm.proxy.spend_tracking.budget_reservation import get_budget_window_start
 from litellm.proxy.spend_tracking.spend_management_endpoints import (
@@ -1021,11 +1013,12 @@ async def proxy_startup_event(app: FastAPI):
         _config = proxy_config.get_config_state()
         _litellm_settings = _config.get("litellm_settings", {})
         verbose_proxy_logger.debug(f"litellm_settings keys = {list(_litellm_settings.keys())}")
-        await ProxyStartupEvent._initialize_semantic_tool_filter(
-            llm_router=llm_router,
-            litellm_settings=_litellm_settings,
-        )
-        verbose_proxy_logger.debug("After semantic tool filter initialization")
+        # MCP semantic filter functionality removed
+        # await ProxyStartupEvent._initialize_semantic_tool_filter(
+        #     llm_router=llm_router,
+        #     litellm_settings=_litellm_settings,
+        # )
+        verbose_proxy_logger.debug("Semantic tool filter initialization skipped (MCP functionality removed)")
     except Exception as e:
         verbose_proxy_logger.error(f"Semantic filter init failed: {e}", exc_info=True)
 
@@ -4934,36 +4927,6 @@ class ProxyConfig:
         """
         Initialize non-LLM configs eg. MCP tools, vector stores, etc.
         """
-        ## MCP TOOLS
-        mcp_tools_config = config.get("mcp_tools", None)
-        if mcp_tools_config:
-            from litellm.proxy._experimental.mcp_server.tool_registry import (
-                global_mcp_tool_registry,
-            )
-
-            global_mcp_tool_registry.load_tools_from_config(mcp_tools_config, config_file_path=config_file_path)
-
-        ## AGENTS
-        agent_config = config.get("agent_list", None)
-        if agent_config:
-            from litellm.proxy.agent_endpoints.agent_registry import (
-                global_agent_registry,
-            )
-
-            global_agent_registry.load_agents_from_config(agent_config)  # type: ignore
-
-        mcp_servers_config = config.get("mcp_servers", None)
-        if mcp_servers_config:
-            from litellm.proxy._experimental.mcp_server.mcp_server_manager import (
-                global_mcp_server_manager,
-            )
-
-            # Get mcp_aliases from litellm_settings if available
-            litellm_settings = config.get("litellm_settings", {})
-            mcp_aliases = litellm_settings.get("mcp_aliases", None)
-
-            await global_mcp_server_manager.load_servers_from_config(mcp_servers_config, mcp_aliases)
-
         ## VECTOR STORES
         vector_store_registry_config = config.get("vector_store_registry", None)
         if vector_store_registry_config:
@@ -6073,20 +6036,11 @@ class ProxyConfig:
         if self._should_load_db_object(object_type="vector_store_indexes"):
             await self._init_vector_store_indexes_in_db(prisma_client=prisma_client)
 
-        if self._should_load_db_object(object_type="mcp"):
-            await self._init_mcp_servers_in_db()
-
-        if self._should_load_db_object(object_type="agents"):
-            await self._init_agents_in_db(prisma_client=prisma_client)
-
         if self._should_load_db_object(object_type="pass_through_endpoints"):
             await self._init_pass_through_endpoints_in_db()
 
         if self._should_load_db_object(object_type="prompts"):
             await self._init_prompts_in_db(prisma_client=prisma_client)
-
-        if self._should_load_db_object(object_type="search_tools"):
-            await self._init_search_tools_in_db(prisma_client=prisma_client)
 
         if self._should_load_db_object(object_type="tools"):
             await self._init_tool_policy_in_db(prisma_client=prisma_client)
@@ -6106,8 +6060,9 @@ class ProxyConfig:
 
             await CacheSettingsManager.init_cache_settings_in_db(prisma_client=prisma_client, proxy_config=self)
 
-        if self._should_load_db_object(object_type="semantic_filter_settings"):
-            await self._init_semantic_filter_settings_in_db(prisma_client=prisma_client)
+        # MCP semantic filter functionality removed
+        # if self._should_load_db_object(object_type="semantic_filter_settings"):
+        #     await self._init_semantic_filter_settings_in_db(prisma_client=prisma_client)
 
         if self._should_load_db_object(object_type="config_overrides"):
             await self._init_hashicorp_vault_config_override(prisma_client=prisma_client)
@@ -6596,109 +6551,6 @@ class ProxyConfig:
             verbose_proxy_logger.exception(
                 "litellm.proxy.proxy_server.py::ProxyConfig:_init_vector_stores_in_db - {}".format(str(e))
             )
-
-    async def _init_mcp_servers_in_db(self):
-        from litellm.proxy._experimental.mcp_server.utils import is_mcp_available
-
-        if not is_mcp_available():
-            verbose_proxy_logger.debug("MCP module not available, skipping MCP server initialization")
-            return
-
-        from litellm.proxy._experimental.mcp_server.mcp_server_manager import (
-            global_mcp_server_manager,
-        )
-        from litellm.proxy._experimental.mcp_server.oauth2_flow_backfill import (
-            backfill_null_oauth2_flows,
-        )
-
-        try:
-            if prisma_client is not None:
-                await backfill_null_oauth2_flows(prisma_client)
-        except Exception as e:  # noqa: BLE001
-            verbose_proxy_logger.exception(
-                "litellm.proxy.proxy_server.py::ProxyConfig:_init_mcp_servers_in_db backfill - {}".format(str(e))
-            )
-
-        try:
-            await global_mcp_server_manager.reload_servers_from_database()
-        except Exception as e:
-            verbose_proxy_logger.exception(
-                "litellm.proxy.proxy_server.py::ProxyConfig:_init_mcp_servers_in_db - {}".format(str(e))
-            )
-
-    async def init_mcp_servers_from_db(self) -> None:
-        if self._should_load_db_object(object_type="mcp"):
-            await self._init_mcp_servers_in_db()
-
-    async def _init_agents_in_db(self, prisma_client: PrismaClient):
-        from litellm.proxy.agent_endpoints.agent_registry import (
-            global_agent_registry as AGENT_REGISTRY,
-        )
-
-        try:
-            db_agents = await AGENT_REGISTRY.get_all_agents_from_db(prisma_client=prisma_client)
-            AGENT_REGISTRY.load_agents_from_db_and_config(db_agents=db_agents, agent_config=config_agents)
-        except Exception as e:
-            verbose_proxy_logger.exception(
-                "litellm.proxy.proxy_server.py::ProxyConfig:_init_agents_in_db - {}".format(str(e))
-            )
-
-    async def _init_search_tools_in_db(self, prisma_client: PrismaClient):
-        """
-        Initialize search tools from database into the router on startup.
-        """
-        global llm_router
-
-        from litellm.proxy.search_endpoints.search_tool_registry import (
-            SearchToolRegistry,
-        )
-        from litellm.router_utils.search_api_router import SearchAPIRouter
-
-        try:
-            db_search_tools = await SearchToolRegistry.get_all_search_tools_from_db(prisma_client=prisma_client)
-
-            parsed_tools = self.parse_search_tools(self.get_config_state())
-            config_search_tools = parsed_tools or []
-
-            search_tools = self._merge_config_and_db_search_tools(
-                config_search_tools=config_search_tools,
-                db_search_tools=[dict(tool) for tool in db_search_tools],
-            )
-
-            verbose_proxy_logger.info(
-                f"Loading {len(search_tools)} search tool(s) into router "
-                f"({len(config_search_tools)} from config, {len(db_search_tools)} from database)"
-            )
-
-            if llm_router is not None and search_tools:
-                await SearchAPIRouter.update_router_search_tools(router_instance=llm_router, search_tools=search_tools)
-                verbose_proxy_logger.info(f"Successfully loaded {len(search_tools)} search tool(s) into router")
-            elif llm_router is not None:
-                verbose_proxy_logger.debug("No search tools found in config or database, skipping router update")
-            else:
-                verbose_proxy_logger.debug(
-                    "Router not initialized yet, search tools will be added when router is created"
-                )
-
-        except Exception as e:
-            verbose_proxy_logger.exception(
-                "litellm.proxy.proxy_server.py::ProxyConfig:_init_search_tools_in_db - {}".format(str(e))
-            )
-
-    @staticmethod
-    def _merge_config_and_db_search_tools(
-        config_search_tools: list[SearchToolTypedDict],
-        db_search_tools: list[dict[str, Any]],
-    ) -> list[dict[str, Any]]:
-        db_tool_names = {tool.get("search_tool_name") for tool in db_search_tools}
-        return [
-            *[
-                dict(config_search_tool)
-                for config_search_tool in config_search_tools
-                if config_search_tool.get("search_tool_name") not in db_tool_names
-            ],
-            *db_search_tools,
-        ]
 
     async def _init_pass_through_endpoints_in_db(self):
         from litellm.proxy.pass_through_endpoints.pass_through_endpoints import (
@@ -7928,9 +7780,6 @@ class ProxyStartupEvent:
                 misfire_grace_time=APSCHEDULER_MISFIRE_GRACE_TIME,
             )
             await proxy_config.get_credentials(prisma_client=prisma_client)
-
-        if store_model_in_db is not True:
-            await proxy_config.init_mcp_servers_from_db()
 
         await cls._initialize_slack_alerting_jobs(
             scheduler=scheduler,
@@ -12052,19 +11901,6 @@ async def model_info_v2(
 
     verbose_proxy_logger.debug("all_models: %s", all_models)
 
-    # Append A2A agents to models list
-    from litellm.proxy.agent_endpoints.model_list_helpers import (
-        append_agents_to_model_info,
-    )
-
-    all_models = await append_agents_to_model_info(
-        models=all_models,
-        user_api_key_dict=user_api_key_dict,
-    )
-
-    # Update total count to include agents
-    search_total_count = len(all_models)
-
     # Translate `model_name` to the public name for team-scoped rows.
     all_models = [_translate_model_name_for_response(m) for m in all_models]
 
@@ -13037,16 +12873,6 @@ async def model_group_info(
     )
     model_groups: List[ModelGroupInfoProxy] = _get_model_group_info(
         llm_router=llm_router, all_models_str=all_models_str, model_group=model_group
-    )
-
-    # Append A2A agents to model groups
-    from litellm.proxy.agent_endpoints.model_list_helpers import (
-        append_agents_to_model_group,
-    )
-
-    model_groups = await append_agents_to_model_group(
-        model_groups=model_groups,
-        user_api_key_dict=user_api_key_dict,
     )
 
     return {"data": model_groups}
@@ -16071,7 +15897,6 @@ app.include_router(ocr_router)
 app.include_router(rag_router)
 app.include_router(video_router)
 app.include_router(container_router)
-app.include_router(search_router)
 app.include_router(image_router)
 app.include_router(fine_tuning_router)
 app.include_router(credential_router)
@@ -16098,9 +15923,6 @@ app.include_router(budget_management_router)
 app.include_router(model_management_router)
 app.include_router(model_access_group_management_router)
 app.include_router(tag_management_router)
-app.include_router(workflow_management_router)
-app.include_router(memory_router)
-app.include_router(plugin_router)
 app.include_router(cost_tracking_settings_router)
 app.include_router(router_settings_router)
 app.include_router(fallback_management_router)
@@ -16120,293 +15942,3 @@ app.add_middleware(
 )
 
 
-async def _stream_mcp_asgi_response(handle_fn, scope: dict, receive) -> "StreamingResponse":
-    """
-    Call an ASGI MCP handler and return a StreamingResponse so SSE/streaming works.
-
-    asyncio.create_task copies the current context, so any ContextVar set before
-    this call (e.g. _mcp_active_toolset_id) is visible inside the handler task.
-    """
-    from starlette.responses import StreamingResponse
-
-    headers_ready: asyncio.Future = asyncio.get_running_loop().create_future()
-    body_queue: asyncio.Queue = asyncio.Queue(maxsize=1024)
-
-    async def bridging_send(message):
-        if message["type"] == "http.response.start":
-            if not headers_ready.done():
-                headers_ready.set_result((message.get("status", 200), message.get("headers", [])))
-        elif message["type"] == "http.response.body":
-            chunk = message.get("body", b"")
-            if chunk:
-                await body_queue.put(chunk)
-            if not message.get("more_body", False):
-                await body_queue.put(None)  # EOF sentinel
-
-    handler_task = asyncio.create_task(handle_fn(scope, receive, bridging_send))
-
-    # If the handler task dies (exception or cancellation) without sending the EOF
-    # sentinel, body_iter() would block forever on body_queue.get().  The callback
-    # below guarantees the queue gets unblocked regardless of how the task ends.
-    # When this happens before response headers, propagate the original exception
-    # instead of waiting for the header timeout.
-    def _ensure_eof(task: asyncio.Task) -> None:
-        if task.cancelled():
-            body_queue.put_nowait(None)
-            return
-
-        task_exception = task.exception()
-        if task_exception is not None:
-            if not headers_ready.done():
-                headers_ready.set_exception(task_exception)
-            body_queue.put_nowait(None)
-
-    handler_task.add_done_callback(_ensure_eof)
-
-    try:
-        status, raw_headers = await asyncio.wait_for(asyncio.shield(headers_ready), timeout=30.0)
-    except asyncio.TimeoutError:
-        handler_task.cancel()
-        raise HTTPException(status_code=504, detail="MCP handler did not respond in time")
-
-    headers_dict = {k.decode("latin-1"): v.decode("latin-1") for k, v in raw_headers}
-
-    async def body_iter():
-        try:
-            while True:
-                chunk = await body_queue.get()
-                if chunk is None:
-                    break
-                yield chunk
-        finally:
-            if not handler_task.done():
-                handler_task.cancel()
-                with contextlib.suppress(asyncio.CancelledError):
-                    await handler_task
-
-    return StreamingResponse(
-        body_iter(),
-        status_code=status,
-        headers=headers_dict,
-        media_type=headers_dict.get("content-type"),
-    )
-
-
-########################################################
-# MCP Server
-########################################################
-
-
-# Toolset-namespaced MCP routes - handle /toolset/{toolset_name}/mcp
-# Must be declared BEFORE /{mcp_server_name}/mcp to avoid being swallowed by the catchall.
-@app.api_route(
-    "/toolset/{toolset_name}/mcp",
-    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
-)
-async def toolset_mcp_route(toolset_name: str, request: Request):
-    """
-    Namespace a toolset as its own MCP endpoint.
-
-    Connecting to /toolset/<name>/mcp exposes exactly the tools defined in
-    the toolset. Access is enforced: non-admin API keys must have the toolset
-    listed in their object_permission.mcp_toolsets grant list, or the request
-    will be rejected with a 403.
-    """
-    try:
-        from litellm.proxy._experimental.mcp_server.mcp_server_manager import (
-            global_mcp_server_manager,
-        )
-        from litellm.proxy._experimental.mcp_server.server import (
-            _mcp_active_toolset_id,
-            handle_streamable_http_mcp,
-        )
-
-        if prisma_client is None:
-            raise HTTPException(status_code=503, detail="Database not available")
-
-        toolset = await global_mcp_server_manager.get_toolset_by_name_cached(prisma_client, toolset_name)
-        if toolset is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Toolset '{toolset_name}' not found",
-            )
-
-        scope = dict(request.scope)
-        scope["path"] = "/mcp"
-
-        token = _mcp_active_toolset_id.set(toolset.toolset_id)
-        try:
-            return await _stream_mcp_asgi_response(handle_streamable_http_mcp, scope, request.receive)
-        finally:
-            _mcp_active_toolset_id.reset(token)
-
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        verbose_proxy_logger.exception("Error handling toolset MCP route for %s: %s", toolset_name, str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
-async def _mcp_forward_as_path(path_segment: str, request: Request):
-    """Rewrite path to /mcp/{path_segment} and stream the response."""
-    from litellm.proxy._experimental.mcp_server.server import (
-        handle_streamable_http_mcp,
-    )
-
-    scope = dict(request.scope)
-    # Preserve the public request path for OAuth challenge URL selection.
-    scope["_original_path"] = scope.get("path", "")
-    scope["path"] = f"/mcp/{path_segment}"
-    return await _stream_mcp_asgi_response(handle_streamable_http_mcp, scope, request.receive)
-
-
-async def _resolve_mcp_csv_tokens(csv_segment: str, client_ip: Optional[str]) -> List[str]:
-    """Validate a comma-separated ``/{name1,name2,...}/mcp`` segment.
-
-    For each token, check (in order) whether it is a registered MCP server
-    alias / name or an MCP access group tag (cached). Tokens are stripped,
-    deduped (exact-match, keeping first occurrence in original order), and
-    capped at ``DEFAULT_MCP_NAMESPACE_CSV_MAX_TOKENS`` to bound the
-    per-request DB / cache fan-out an authenticated caller can trigger by
-    stuffing the path with tokens. Dedup is case-sensitive on purpose:
-    downstream resolvers may treat names case-sensitively, so collapsing
-    ``MyGroup`` and ``mygroup`` would risk dropping a valid distinct token.
-
-    Toolset names are intentionally NOT resolved here — toolsets bind a single
-    toolset id into request scope and have no defined semantics inside a
-    comma-separated server list.
-
-    Returns the subset of resolved tokens in original order. An empty list
-    means the segment did not resolve to any known server / group; the caller
-    should treat that as a 404 instead of forwarding it downstream (where an
-    all-unmatched server filter falls back to the full ``allowed_mcp_servers``
-    list and silently broadens the request scope).
-    """
-    from litellm.constants import DEFAULT_MCP_NAMESPACE_CSV_MAX_TOKENS
-    from litellm.proxy._experimental.mcp_server.mcp_server_manager import (
-        global_mcp_server_manager,
-    )
-
-    seen: set = set()
-    deduped: List[str] = []
-    for raw in csv_segment.split(","):
-        token = raw.strip()
-        if not token or token in seen:
-            continue
-        seen.add(token)
-        deduped.append(token)
-        if len(deduped) >= DEFAULT_MCP_NAMESPACE_CSV_MAX_TOKENS:
-            break
-
-    resolved: List[str] = []
-    for token in deduped:
-        if global_mcp_server_manager.get_mcp_server_by_name(token, client_ip=client_ip):
-            resolved.append(token)
-            continue
-        if await _is_mcp_access_group_cached(token):
-            resolved.append(token)
-    return resolved
-
-
-async def _is_mcp_access_group_cached(name: str) -> bool:
-    """Return True if *name* is a known MCP access group tag.
-
-    Positive results are cached for the configured management-object TTL
-    (``get_management_object_ttl(user_api_key_cache)``). Negative results are
-    cached for a short
-    ``DEFAULT_MCP_ACCESS_GROUP_NEGATIVE_CACHE_TTL`` window so unauthenticated
-    callers cannot force a fresh DB lookup per request for unknown names, while
-    bounding staleness so a transient DB error (which surfaces as an empty
-    list) cannot hide a real group for long.
-    """
-    from litellm.constants import DEFAULT_MCP_ACCESS_GROUP_NEGATIVE_CACHE_TTL
-    from litellm.proxy._experimental.mcp_server.auth.user_api_key_auth_mcp import (
-        MCPRequestHandler,
-    )
-
-    cache_key = f"mcp_access_group_exists:{name}"
-    cached = await user_api_key_cache.async_get_cache(key=cache_key)
-    if cached is not None:
-        return bool(cached)
-    result = bool(await MCPRequestHandler._get_mcp_servers_from_access_groups([name]))
-    await user_api_key_cache.async_set_cache(
-        key=cache_key,
-        value=result,
-        ttl=(get_management_object_ttl(user_api_key_cache) if result else DEFAULT_MCP_ACCESS_GROUP_NEGATIVE_CACHE_TTL),
-    )
-    return result
-
-
-# Dynamic MCP server routes - handle /{mcp_server_name}/mcp
-@app.api_route(
-    "/{mcp_server_name}/mcp",
-    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
-)
-async def dynamic_mcp_route(mcp_server_name: str, request: Request):
-    """Handle /{name}/mcp for MCP server aliases, toolsets, MCP access group tags, and comma-separated lists.
-
-    Resolution order:
-    1. Registered MCP server alias / name
-    2. Comma-separated list (short-circuits before any DB call)
-    3. Toolset name (DB lookup, cached)
-    4. MCP access group tag (DB lookup, cached)
-    """
-    try:
-        from litellm.proxy._experimental.mcp_server.mcp_server_manager import (
-            global_mcp_server_manager,
-        )
-        from litellm.proxy.auth.ip_address_utils import IPAddressUtils
-
-        client_ip = IPAddressUtils.get_mcp_client_ip(request)
-
-        # 1. Registered MCP server alias
-        if global_mcp_server_manager.get_mcp_server_by_name(mcp_server_name, client_ip=client_ip):
-            return await _mcp_forward_as_path(mcp_server_name, request)
-
-        # 2. Comma-separated list — validate every token resolves to a known
-        # server alias or access group before forwarding. Bounds DB / cache
-        # fan-out and prevents the downstream filter from silently falling back
-        # to the full allowed_mcp_servers list when no token matches.
-        if "," in mcp_server_name:
-            resolved_tokens = await _resolve_mcp_csv_tokens(mcp_server_name, client_ip)
-            if not resolved_tokens:
-                raise HTTPException(
-                    status_code=404,
-                    detail=(
-                        f"No MCP server, toolset, or access group in '{mcp_server_name}' resolved to a known target"
-                    ),
-                )
-            return await _mcp_forward_as_path(",".join(resolved_tokens), request)
-
-        # 3. Toolset name (cached)
-        if prisma_client is not None:
-            from litellm.proxy._experimental.mcp_server.server import (
-                _mcp_active_toolset_id,
-                handle_streamable_http_mcp,
-            )
-
-            toolset = await global_mcp_server_manager.get_toolset_by_name_cached(prisma_client, mcp_server_name)
-            if toolset is not None:
-                scope = dict(request.scope)
-                scope["_original_path"] = scope.get("path", "")
-                scope["path"] = "/mcp"
-                token = _mcp_active_toolset_id.set(toolset.toolset_id)
-                try:
-                    return await _stream_mcp_asgi_response(handle_streamable_http_mcp, scope, request.receive)
-                finally:
-                    _mcp_active_toolset_id.reset(token)
-
-        # 4. MCP access group tag (cached)
-        if await _is_mcp_access_group_cached(mcp_server_name):
-            return await _mcp_forward_as_path(mcp_server_name, request)
-
-        raise HTTPException(
-            status_code=404,
-            detail=f"MCP server, toolset, or access group '{mcp_server_name}' not found",
-        )
-
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        verbose_proxy_logger.exception("Error handling dynamic MCP route for %s: %s", mcp_server_name, str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")

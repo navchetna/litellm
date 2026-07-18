@@ -67,8 +67,6 @@ export function AccessGroupDetail({ accessGroupId, onBack }: AccessGroupDetailPr
   }
 
   const modelIds = accessGroup.access_model_names ?? [];
-  const mcpServerIds = accessGroup.access_mcp_server_ids ?? [];
-  const agentIds = accessGroup.access_agent_ids ?? [];
   const keyIds = accessGroup.assigned_key_ids ?? [];
   const teamIds = accessGroup.assigned_team_ids ?? [];
 
@@ -104,58 +102,6 @@ export function AccessGroupDetail({ accessGroupId, onBack }: AccessGroupDetailPr
           />
         ) : (
           <Empty description="No models assigned to this group" />
-        ),
-    },
-    {
-      key: "mcp",
-      label: (
-        <Flex align="center" gap={8}>
-          <ServerIcon size={16} />
-          MCP Servers
-          <Tag>{mcpServerIds?.length}</Tag>
-        </Flex>
-      ),
-      children:
-        mcpServerIds?.length > 0 ? (
-          <List
-            grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 4 }}
-            dataSource={mcpServerIds}
-            renderItem={(id) => (
-              <List.Item>
-                <Card size="small">
-                  <Text code>{id}</Text>
-                </Card>
-              </List.Item>
-            )}
-          />
-        ) : (
-          <Empty description="No MCP servers assigned to this group" />
-        ),
-    },
-    {
-      key: "agents",
-      label: (
-        <Flex align="center" gap={8}>
-          <BotIcon size={16} />
-          Agents
-          <Tag>{agentIds?.length}</Tag>
-        </Flex>
-      ),
-      children:
-        agentIds?.length > 0 ? (
-          <List
-            grid={{ gutter: 16, xs: 1, sm: 2, md: 3, lg: 4 }}
-            dataSource={agentIds}
-            renderItem={(id) => (
-              <List.Item>
-                <Card size="small">
-                  <Text code>{id}</Text>
-                </Card>
-              </List.Item>
-            )}
-          />
-        ) : (
-          <Empty description="No agents assigned to this group" />
         ),
     },
   ];

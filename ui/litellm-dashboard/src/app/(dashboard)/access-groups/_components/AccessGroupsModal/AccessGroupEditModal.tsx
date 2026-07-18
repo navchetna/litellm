@@ -23,8 +23,6 @@ export function AccessGroupEditModal({ visible, accessGroup, onCancel, onSuccess
         name: accessGroup.access_group_name,
         description: accessGroup.description ?? "",
         modelIds: accessGroup.access_model_names ?? [],
-        mcpServerIds: accessGroup.access_mcp_server_ids ?? [],
-        agentIds: accessGroup.access_agent_ids ?? [],
       });
     }
   }, [visible, accessGroup, form]);
@@ -37,8 +35,6 @@ export function AccessGroupEditModal({ visible, accessGroup, onCancel, onSuccess
           access_group_name: values.name,
           description: values.description,
           access_model_names: values.modelIds,
-          access_mcp_server_ids: values.mcpServerIds,
-          access_agent_ids: values.agentIds,
         };
 
         editMutation.mutate(

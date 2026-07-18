@@ -88,10 +88,8 @@ describe("Sidebar (leftnav)", () => {
       "Playground",
       "Models + Endpoints",
       "Agentic",
-      "MCP Servers",
       "Guardrails",
       "Policies",
-      "Tools",
       "Usage",
       "Logs",
       "Guardrails Monitor",
@@ -134,7 +132,7 @@ describe("Sidebar (leftnav)", () => {
   describe("Admin Viewer parity", () => {
     // Admin Viewer follows a "read parity with Proxy Admin, no writes, no
     // cost-incurring actions" rule. Playground stays hidden (incurs LLM
-    // cost); Models + Endpoints and Agents must be visible read-only.
+    // cost); Models + Endpoints must be visible read-only.
     const adminViewerAuth = {
       userId: "admin-viewer-user-id",
       accessToken: "test-access-token",
@@ -156,19 +154,6 @@ describe("Sidebar (leftnav)", () => {
       mockUseAuthorized.mockReturnValueOnce(adminViewerAuth);
       renderWithProviders(<Sidebar {...defaultProps} />);
       expect(screen.getByText("Models + Endpoints")).toBeInTheDocument();
-    });
-
-    it("shows Agents (under Agentic) to Admin Viewer (read-only)", async () => {
-      mockUseAuthorized.mockReturnValueOnce(adminViewerAuth);
-      renderWithProviders(<Sidebar {...defaultProps} />);
-      // Agents is now nested under the "Agentic" submenu — expand parent
-      // first to render the children, then assert Agents is visible.
-      act(() => {
-        fireEvent.click(screen.getByText("Agentic"));
-      });
-      await waitFor(() => {
-        expect(screen.getByText("Agents")).toBeInTheDocument();
-      });
     });
 
     it("shows Logs to Admin Viewer", () => {
@@ -246,7 +231,7 @@ describe("getBreadcrumb", () => {
   });
 
   it("resolves a nested child page to its parent section", () => {
-    expect(getBreadcrumb("search-tools")).toEqual({ section: "AI Gateway", title: "Search Tools" });
+    expect(getBreadcrumb("workflows")).toEqual({ section: "AI Gateway", title: "Workflow Runs" });
   });
 
   it("falls back to a prettified title with no section for unknown pages", () => {

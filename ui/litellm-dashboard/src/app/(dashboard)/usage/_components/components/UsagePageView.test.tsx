@@ -1,4 +1,3 @@
-import { useAgents } from "@/app/(dashboard)/hooks/agents/useAgents";
 import { useCustomers } from "@/app/(dashboard)/hooks/customers/useCustomers";
 import useAuthorized from "@/app/(dashboard)/hooks/useAuthorized";
 import { useCurrentUser } from "@/app/(dashboard)/hooks/users/useCurrentUser";
@@ -107,10 +106,6 @@ vi.mock("./UsageAIChatPanel", () => ({
 
 vi.mock("@/app/(dashboard)/hooks/customers/useCustomers", () => ({
   useCustomers: vi.fn(),
-}));
-
-vi.mock("@/app/(dashboard)/hooks/agents/useAgents", () => ({
-  useAgents: vi.fn(),
 }));
 
 vi.mock("@/app/(dashboard)/hooks/useAuthorized", () => ({
@@ -332,7 +327,6 @@ describe("UsagePage", () => {
   const mockUserDailyActivityCall = vi.mocked(networking.userDailyActivityCall);
   const mockTagListCall = vi.mocked(networking.tagListCall);
   const mockUseCustomers = vi.mocked(useCustomers);
-  const mockUseAgents = vi.mocked(useAgents);
   const mockUseAuthorized = vi.mocked(useAuthorized);
   const mockUseCurrentUser = vi.mocked(useCurrentUser);
   const mockUseInfiniteUsers = vi.mocked(useInfiniteUsers);
@@ -548,11 +542,6 @@ describe("UsagePage", () => {
       isLoading: false,
       error: null,
     } as any);
-    mockUseAgents.mockReturnValue({
-      data: { agents: [] },
-      isLoading: false,
-      error: null,
-    } as any);
   });
 
   it("should render and fetch usage data on mount", async () => {
@@ -716,11 +705,6 @@ describe("UsagePage", () => {
   });
 
   it("should show agent usage view for admins", async () => {
-    mockUseAgents.mockReturnValue({
-      data: { agents: mockAgents },
-      isLoading: false,
-      error: null,
-    } as any);
 
     renderWithProviders(<UsagePage {...defaultProps} />);
 
@@ -1123,11 +1107,6 @@ describe("UsagePage", () => {
 
   describe("agent usage banner", () => {
     it("should show agent usage banner with A2A info", async () => {
-      mockUseAgents.mockReturnValue({
-        data: { agents: mockAgents },
-        isLoading: false,
-        error: null,
-      } as any);
 
       renderWithProviders(<UsagePage {...defaultProps} />);
 

@@ -79,29 +79,6 @@ LAZY_FEATURES: Tuple[LazyFeature, ...] = (
         path_prefixes=("/policies/resolve", "/policies/attachments/estimate-impact"),
     ),
     LazyFeature(
-        name="agents",
-        module_path="litellm.proxy.agent_endpoints.endpoints",
-        path_prefixes=("/v1/agents", "/agents", "/agent/"),
-    ),
-    LazyFeature(
-        name="gemini_agents",
-        module_path="litellm.proxy.google_endpoints.agents_endpoints",
-        path_prefixes=("/v1beta/agents",),
-    ),
-    LazyFeature(
-        name="a2a",
-        module_path="litellm.proxy.agent_endpoints.a2a_endpoints",
-        # ``/v1/a2a/{agent_id}/message/send`` is caught via the suffix so the
-        # ``/v1/a2a`` prefix doesn't subsume the discover prefix below.
-        path_prefixes=("/a2a",),
-        path_suffixes=("/message/send",),
-    ),
-    LazyFeature(
-        name="a2a_registration",
-        module_path="litellm.proxy.a2a.endpoints",
-        path_prefixes=("/v1/a2a/discover",),
-    ),
-    LazyFeature(
         name="vector_stores",
         module_path="litellm.proxy.vector_store_endpoints.endpoints",
         path_prefixes=("/v1/vector_stores", "/vector_stores", "/v1/indexes"),
@@ -125,58 +102,6 @@ LAZY_FEATURES: Tuple[LazyFeature, ...] = (
         path_prefixes=("/v1/tool", "/tool"),
     ),
     LazyFeature(
-        name="search_tools",
-        module_path="litellm.proxy.search_endpoints.search_tool_management",
-        path_prefixes=("/search_tools",),
-    ),
-    # mcp_management owns most /v1/mcp/* admin routes; mcp_app is the mounted
-    # streaming sub-app at /mcp.
-    LazyFeature(
-        name="mcp_management",
-        module_path="litellm.proxy.management_endpoints.mcp_management_endpoints",
-        path_prefixes=("/v1/mcp/",),
-    ),
-    LazyFeature(
-        # Also serves /.well-known/oauth-* (OAuth metadata discovery).
-        # No /mcp/oauth prefix here: the mounted /mcp sub-app would
-        # shadow it, and there are no actual routes there anyway.
-        name="mcp_byok_oauth",
-        module_path="litellm.proxy._experimental.mcp_server.byok_oauth_endpoints",
-        path_prefixes=("/v1/mcp/oauth", "/.well-known/oauth-"),
-    ),
-    LazyFeature(
-        # Serves OAuth dance endpoints (/authorize, /token, /callback,
-        # /register) plus several /.well-known/ discovery URLs at the proxy
-        # root — needed for MCP-over-OAuth flows even before /mcp is hit.
-        name="mcp_discoverable",
-        module_path="litellm.proxy._experimental.mcp_server.discoverable_endpoints",
-        path_prefixes=(
-            "/.well-known/oauth-",
-            "/.well-known/openid-configuration",
-            "/.well-known/jwks.json",
-            "/authorize",
-            "/token",
-            "/callback",
-            "/register",
-        ),
-        # Catches the /{mcp_server_name}/authorize|token|register variants.
-        path_suffixes=("/authorize", "/token", "/register"),
-    ),
-    LazyFeature(
-        name="mcp_rest",
-        module_path="litellm.proxy._experimental.mcp_server.rest_endpoints",
-        path_prefixes=("/mcp-rest",),
-    ),
-    LazyFeature(
-        # Hardcoded /mcp matches BASE_MCP_ROUTE; importing the constant
-        # here would defeat lazy loading.
-        name="mcp_app",
-        module_path="litellm.proxy._experimental.mcp_server.server",
-        path_prefixes=("/mcp",),
-        register_fn=_mount_app("/mcp", attr_name="app"),
-        persistent_swagger_stub=True,
-    ),
-    LazyFeature(
         name="config_overrides",
         module_path="litellm.proxy.management_endpoints.config_override_endpoints",
         path_prefixes=("/config_overrides",),
@@ -192,11 +117,6 @@ LAZY_FEATURES: Tuple[LazyFeature, ...] = (
         path_prefixes=("/v1/messages", "/anthropic", "/api/event_logging"),
     ),
     LazyFeature(
-        name="anthropic_skills",
-        module_path="litellm.proxy.anthropic_endpoints.skills_endpoints",
-        path_prefixes=("/v1/skills", "/skills"),
-    ),
-    LazyFeature(
         name="langfuse_passthrough",
         module_path="litellm.proxy.vertex_ai_endpoints.langfuse_endpoints",
         path_prefixes=("/langfuse",),
@@ -205,12 +125,6 @@ LAZY_FEATURES: Tuple[LazyFeature, ...] = (
         name="evals",
         module_path="litellm.proxy.openai_evals_endpoints.endpoints",
         path_prefixes=("/v1/evals", "/evals"),
-    ),
-    LazyFeature(
-        name="claude_code_marketplace",
-        module_path="litellm.proxy.anthropic_endpoints.claude_code_endpoints",
-        path_prefixes=("/claude-code",),
-        register_fn=_include_router("claude_code_marketplace_router"),
     ),
     LazyFeature(
         name="scim",
