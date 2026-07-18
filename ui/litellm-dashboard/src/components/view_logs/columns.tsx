@@ -1,12 +1,14 @@
 import { DateCell, IdCell, MoneyCell, StatusBadge } from "@/components/shared/table_cells";
 import { getSpendString } from "@/utils/dataUtils";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tantml:parameter>
 import { Tooltip } from "antd";
 import React from "react";
+import moment from "moment";
 import { getProviderLogoAndName } from "../provider_info_helpers";
 import { TableHeaderSortDropdown } from "../common_components/TableHeaderSortDropdown/TableHeaderSortDropdown";
 import { AGENT_CALL_TYPES, MCP_CALL_TYPES } from "./constants";
 import { AgentBadge, AgentIcon, LlmBadge, McpBadge, SparkleIcon, WrenchIcon } from "./TypeBadges";
+import { formatRelativeTime, formatCost, formatDuration, formatTokens } from "./logs_utils";
 
 /** API sort field mapping for /spend/logs/ui endpoint */
 export const LOGS_SORT_FIELD_MAP = {
@@ -118,8 +120,17 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
         )
       : "Time",
     accessorKey: "startTime",
-    size: 200,
-    cell: (info: any) => <DateCell value={info.getValue()} />,
+    size: 150,
+    cell: (info: any) => {
+      const timestamp = info.getValue();
+      const relativeTime = formatRelativeTime(timestamp);
+      const absoluteTime = moment(timestamp).format("MMM D, h:mm:ss A");
+      return (
+        <Tooltip title={absoluteTime}>
+          <span className="text-sm text-gray-700">{relativeTime}</span>
+        </Tooltip>
+      );
+    },
   },
   {
     header: "Type",
@@ -167,13 +178,21 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
     },
   },
   {
-    header: "Status",
+    header: "",
     accessorKey: "metadata.status",
-    size: 100,
+    size: 50,
     cell: (info: any) => {
       const status = info.getValue() || "Success";
       const isSuccess = status.toLowerCase() !== "failure";
-      return <StatusBadge tone={isSuccess ? "success" : "error"} label={isSuccess ? "Success" : "Failure"} />;
+      return (
+        <div className={`flex items-center justify-center text-xl`}>
+          {isSuccess ? (
+            <span className="text-green-500" title="Success">✓</span>
+          ) : (
+            <span className="text-red-500" title="Failure">●</span>
+          )}
+        </div>
+      );
     },
   },
   {

@@ -119,13 +119,13 @@ export function DataTable<TData, TValue>({
             table.getRowModel().rows.map((row) => (
               <Fragment key={row.id}>
                 <TableRow
-                  className={`h-8 ${onRowClick ? "cursor-pointer" : ""}`}
+                  className={`hover:bg-gray-50 transition-colors ${onRowClick ? "cursor-pointer" : ""}`}
                   onClick={() => onRowClick?.(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className={`py-0.5 max-h-8 overflow-hidden text-ellipsis whitespace-nowrap first:pl-4 last:pr-4 ${
+                      className={`py-3 first:pl-6 last:pr-6 ${
                         cell.column.columnDef.meta?.numeric ? "text-right tabular-nums" : ""
                       }`}
                       style={hasExplicitColumnSizes ? { width: cell.column.getSize() } : undefined}
