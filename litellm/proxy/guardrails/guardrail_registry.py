@@ -96,12 +96,21 @@ def get_guardrail_initializer_from_hooks():
             verbose_proxy_logger.debug("guardrail_hooks directory not found")
             return discovered_initializers
 
+        # Skip MCP-related guardrails (functionality removed)
+        mcp_skip_list = {
+            "mcp_security",
+            "mcp_end_user_permission",
+            "mcp_jwt_signer",
+            "cisco_ai_defense_mcp",
+            "mcp_semantic_filter",
+        }
+
         # Scan each subdirectory in guardrail_hooks
         for item in os.listdir(hooks_dir):
             item_path = os.path.join(hooks_dir, item)
 
-            # Skip files and __pycache__ directories
-            if not os.path.isdir(item_path) or item.startswith("__"):
+            # Skip files, __pycache__ directories, and MCP guardrails
+            if not os.path.isdir(item_path) or item.startswith("__") or item in mcp_skip_list:
                 continue
 
             # Check if the directory has an __init__.py file
