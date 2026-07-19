@@ -32,6 +32,8 @@ interface DataTableProps<TData, TValue> {
   noDataMessage?: string;
   /** Enable client-side column sorting (defaults to false to avoid conflicts with server-side sorting) */
   enableSorting?: boolean;
+  /** Returns true if the row should be styled as a session row */
+  isSessionRow?: (row: TData) => boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -45,6 +47,7 @@ export function DataTable<TData, TValue>({
   loadingMessage = "Loading...",
   noDataMessage = "No results",
   enableSorting = false,
+  isSessionRow,
 }: DataTableProps<TData, TValue>) {
   const supportsExpansion = !!renderSubComponent && !!getRowCanExpand;
   const hasExplicitColumnSizes = columns.some((column) => column.size !== undefined);
@@ -116,24 +119,30 @@ export function DataTable<TData, TValue>({
               </TableCell>
             </TableRow>
           ) : table.getRowModel().rows.length > 0 ? (
-            table.getRowModel().rows.map((row) => (
-              <Fragment key={row.id}>
-                <TableRow
-                  className={`hover:bg-gray-50 transition-colors ${onRowClick ? "cursor-pointer" : ""}`}
-                  onClick={() => onRowClick?.(row.original)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className={`py-3 first:pl-6 last:pr-6 ${
-                        cell.column.columnDef.meta?.numeric ? "text-right tabular-nums" : ""
-                      }`}
-                      style={hasExplicitColumnSizes ? { width: cell.column.getSize() } : undefined}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
+            table.getRowModel().rows.map((row) => {
+              const isSession = isSessionRow?.(row.original) || false;
+              return (
+                <Fragment key={row.id}>
+                  <TableRow
+                    className={`${
+                      isSession
+                        ? "bg-blue-50/30 hover:bg-blue-50/50 border-l-4 border-l-blue-400"
+                        : "hover:bg-gray-50"
+                    } transition-colors ${onRowClick ? "cursor-pointer" : ""}`}
+                    onClick={() => onRowClick?.(row.original)}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className={`${isSession ? "py-4" : "py-3"} first:pl-6 last:pr-6 ${
+                          cell.column.columnDef.meta?.numeric ? "text-right tabular-nums" : ""
+                        }`}
+                        style={hasExplicitColumnSizes ? { width: cell.column.getSize() } : undefined}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
 
                 {supportsExpansion && row.getIsExpanded() && renderSubComponent && (
                   <TableRow className="hover:bg-transparent">

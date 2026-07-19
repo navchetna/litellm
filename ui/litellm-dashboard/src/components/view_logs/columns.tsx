@@ -122,13 +122,23 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
     accessorKey: "startTime",
     size: 150,
     cell: (info: any) => {
+      const row = info.row.original;
       const timestamp = info.getValue();
       const relativeTime = formatRelativeTime(timestamp);
       const absoluteTime = moment(timestamp).format("MMM D, h:mm:ss A");
+      const isSession = row.session_id && (row.session_total_count || 1) > 1;
+
       return (
-        <Tooltip title={absoluteTime}>
-          <span className="text-sm text-gray-700">{relativeTime}</span>
-        </Tooltip>
+        <div className="flex flex-col gap-0.5">
+          {isSession && (
+            <span className="text-[10px] font-semibold text-blue-600 uppercase tracking-wide">
+              ▶ SESSION
+            </span>
+          )}
+          <Tooltip title={absoluteTime}>
+            <span className="text-sm text-gray-700">{relativeTime}</span>
+          </Tooltip>
+        </div>
       );
     },
   },
@@ -199,7 +209,32 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
     header: "Session ID",
     accessorKey: "session_id",
     size: 120,
-    cell: (info: any) => <IdCell value={info.getValue()} onClick={info.row.original.onSessionClick} />,
+    cell: (info: any) => {
+      const row = info.row.original;
+      const sessionId = info.getValue();
+      const isSession = row.session_id && (row.session_total_count || 1) > 1;
+
+      if (!sessionId) {
+        return <span className="text-gray-400 text-sm">-</span>;
+      }
+
+      return (
+        <div className="flex flex-col gap-1">
+          <IdCell value={sessionId} onClick={row.onSessionClick} />
+          {isSession && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                row.onSessionClick?.(sessionId);
+              }}
+              className="text-[11px] text-blue-600 hover:text-blue-800 font-medium text-left hover:underline"
+            >
+              View Details →
+            </button>
+          )}
+        </div>
+      );
+    },
   },
 
   {

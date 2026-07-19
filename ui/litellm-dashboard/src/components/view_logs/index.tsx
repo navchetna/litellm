@@ -221,11 +221,9 @@ export default function SpendLogsTable({ accessToken, token, userRole, userID, p
   }
 
   const handleRowClick = (log: LogEntry) => {
-    // Multi-call session row: open in the same right-side drawer (session mode)
+    // Multi-call session row: don't open drawer immediately
+    // User should click "View Details" button instead
     if (log.session_id && (log.session_total_count || 1) > 1) {
-      setSelectedSessionId(log.session_id);
-      setSelectedLog(log);
-      setIsDrawerOpen(true);
       return;
     }
     // Single-call row: open the detail drawer
@@ -285,6 +283,7 @@ export default function SpendLogsTable({ accessToken, token, userRole, userID, p
                     getRowId={(row) => row.request_id}
                     onRowClick={handleRowClick}
                     isLoading={isLogsLoading}
+                    isSessionRow={(row) => !!row.session_id && (row.session_total_count || 1) > 1}
                   />
                   <LogTablePagination
                     currentPage={currentPage}
