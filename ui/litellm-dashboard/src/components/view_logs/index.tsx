@@ -2,8 +2,6 @@ import moment from "moment";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@tremor/react";
 import { internalUserRoles } from "../../utils/roles";
-import DeletedKeysPage from "../DeletedKeysPage/DeletedKeysPage";
-import DeletedTeamsPage from "../DeletedTeamsPage/DeletedTeamsPage";
 import { KeyResponse } from "../key_team_helpers/key_list";
 import FilterComponent from "../molecules/filter";
 import { keyInfoV1Call } from "../networking";
@@ -311,8 +309,6 @@ export default function SpendLogsTable({ accessToken, token, userRole, userID, p
         <TabList>
           <Tab>Request Logs</Tab>
           <Tab>Audit Logs</Tab>
-          <Tab>Deleted Keys</Tab>
-          <Tab>Deleted Teams</Tab>
         </TabList>
         <TabPanels>
           <TabPanel>
@@ -381,12 +377,6 @@ export default function SpendLogsTable({ accessToken, token, userRole, userID, p
               isActive={activeTab === "audit logs"}
               premiumUser={premiumUser}
             />
-          </TabPanel>
-          <TabPanel>
-            <DeletedKeysPage />
-          </TabPanel>
-          <TabPanel>
-            <DeletedTeamsPage />
           </TabPanel>
         </TabPanels>
       </TabGroup>
