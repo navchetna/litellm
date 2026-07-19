@@ -1032,7 +1032,7 @@ const ChatUI: React.FC<ChatUIProps> = ({
   return (
     <div className={`w-full bg-white ${simplified ? "h-full flex flex-col" : "p-4 pb-0"}`}>
       <Card className={`w-full rounded-xl shadow-md overflow-hidden ${simplified ? "h-full flex flex-col" : ""}`}>
-        <div className={`flex w-full gap-4 ${simplified ? "h-full" : "h-[80vh]"}`}>
+        <div className={`flex flex-row-reverse w-full gap-4 ${simplified ? "h-full" : "h-[80vh]"}`}>
           {/* Left Sidebar with Controls - hidden in simplified mode */}
           {!simplified && (
             <div className="w-1/4 p-4 bg-gray-50 overflow-y-auto">
