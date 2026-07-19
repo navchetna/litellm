@@ -1,10 +1,7 @@
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
-import { SyncOutlined } from "@ant-design/icons";
-import { Button, Switch } from "antd";
 import { QUICK_SELECT_OPTIONS } from "./constants";
 import { getTimeRangeDisplay } from "./logs_utils";
-import type { PaginatedResponse } from "./log_filter_logic";
 
 interface LogsTableToolbarProps {
   searchTerm: string;
@@ -19,13 +16,7 @@ interface LogsTableToolbarProps {
   onSelectedTimeIntervalChange: (value: { value: number; unit: string }) => void;
   isLiveTail: boolean;
   onIsLiveTailChange: (value: boolean) => void;
-  currentPage: number;
   onCurrentPageChange: (updater: number | ((prev: number) => number)) => void;
-  pageSize: number;
-  isLoading: boolean;
-  isButtonLoading: boolean;
-  onRefetch: () => void;
-  filteredLogs: PaginatedResponse;
 }
 
 export function LogsTableToolbar({
@@ -41,13 +32,7 @@ export function LogsTableToolbar({
   onSelectedTimeIntervalChange,
   isLiveTail,
   onIsLiveTailChange,
-  currentPage,
   onCurrentPageChange,
-  pageSize,
-  isLoading,
-  isButtonLoading,
-  onRefetch,
-  filteredLogs,
 }: LogsTableToolbarProps) {
   const [quickSelectOpen, setQuickSelectOpen] = useState(false);
   const quickSelectRef = useRef<HTMLDivElement>(null);
@@ -72,10 +57,10 @@ export function LogsTableToolbar({
       <div className="border-b px-6 py-4 w-full max-w-full box-border">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0 w-full max-w-full box-border">
           <div className="flex flex-wrap items-center gap-3 w-full max-w-full box-border">
-            <div className="relative w-64 min-w-0 shrink-0">
+            <div className="relative w-80 min-w-0 shrink-0">
               <input
                 type="text"
-                placeholder="Search by Request ID"
+                placeholder="Search request ID, model, user..."
                 className="w-full px-3 py-2 pl-8 border rounded-md text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
@@ -147,20 +132,16 @@ export function LogsTableToolbar({
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-900">Live Tail</span>
-                <Switch checked={isLiveTail} defaultChecked={true} onChange={onIsLiveTailChange} />
-              </div>
-
-              <Button
-                type="default"
-                icon={<SyncOutlined spin={isButtonLoading} />}
-                onClick={onRefetch}
-                disabled={isButtonLoading}
-                title="Fetch data"
+              <button
+                onClick={() => onIsLiveTailChange(!isLiveTail)}
+                className={`px-3 py-2 text-sm border rounded-md hover:bg-gray-50 flex items-center gap-2 transition-colors ${
+                  isLiveTail ? "bg-green-50 border-green-200 text-green-700" : "bg-gray-50 border-gray-200 text-gray-600"
+                }`}
+                title={isLiveTail ? "Auto-refresh ON (15s)" : "Auto-refresh OFF"}
               >
-                {isButtonLoading ? "Fetching" : "Fetch"}
-              </Button>
+                <span className={`inline-block w-2 h-2 rounded-full ${isLiveTail ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
+                {isLiveTail ? "Live" : "Paused"}
+              </button>
             </div>
 
             {isCustomDate && (
@@ -191,55 +172,8 @@ export function LogsTableToolbar({
               </div>
             )}
           </div>
-
-          <div className="flex items-center space-x-4">
-            <span
-              className="text-sm text-gray-700 whitespace-nowrap"
-              title={
-                !isLoading && filteredLogs?.total_is_capped
-                  ? `Showing the first ${filteredLogs.total.toLocaleString()} results. Narrow the date range or add filters to see more.`
-                  : undefined
-              }
-            >
-              Showing {isLoading ? "..." : filteredLogs ? (currentPage - 1) * pageSize + 1 : 0} -{" "}
-              {isLoading ? "..." : filteredLogs ? Math.min(currentPage * pageSize, filteredLogs.total) : 0} of{" "}
-              {isLoading ? "..." : filteredLogs ? filteredLogs.total : 0}
-              {!isLoading && filteredLogs?.total_is_capped ? "+" : ""} results
-            </span>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-700 min-w-[90px]">
-                Page {isLoading ? "..." : currentPage} of{" "}
-                {isLoading ? "..." : filteredLogs ? filteredLogs.total_pages : 1}
-                {!isLoading && filteredLogs?.total_is_capped ? "+" : ""}
-              </span>
-              <button
-                onClick={() => onCurrentPageChange((p: number) => Math.max(1, p - 1))}
-                disabled={isLoading || currentPage === 1}
-                className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => onCurrentPageChange((p: number) => Math.min(filteredLogs.total_pages || 1, p + 1))}
-                disabled={isLoading || currentPage === (filteredLogs.total_pages || 1)}
-                className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
-          </div>
         </div>
       </div>
-      {isLiveTail && currentPage === 1 && (
-        <div className="mb-4 px-4 py-2 bg-green-50 border border-green-200 rounded-md flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-green-700">Auto-refreshing every 15 seconds</span>
-          </div>
-          <button onClick={() => onIsLiveTailChange(false)} className="text-sm text-green-600 hover:text-green-800">
-            Stop
-          </button>
-        </div>
-      )}
     </>
   );
 }

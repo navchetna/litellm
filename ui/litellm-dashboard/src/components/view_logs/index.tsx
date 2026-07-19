@@ -15,6 +15,7 @@ import { getLogFilterOptions } from "./filter_options";
 import { useLogFilterLogic, defaultFilters, type LogFilterState } from "./log_filter_logic";
 import { LogDetailsDrawer } from "./LogDetailsDrawer";
 import { LogsTableToolbar } from "./LogsTableToolbar";
+import { LogTablePagination } from "./LogTablePagination";
 import { DataTable } from "./table";
 import { AntDLoadingSpinner } from "../ui/AntDLoadingSpinner";
 
@@ -276,13 +277,7 @@ export default function SpendLogsTable({ accessToken, token, userRole, userID, p
                     onSelectedTimeIntervalChange={setSelectedTimeInterval}
                     isLiveTail={isLiveTail}
                     onIsLiveTailChange={setIsLiveTail}
-                    currentPage={currentPage}
                     onCurrentPageChange={setCurrentPage}
-                    pageSize={pageSize}
-                    isLoading={isLogsLoading}
-                    isButtonLoading={isButtonLoading}
-                    onRefetch={() => logsQuery.refetch()}
-                    filteredLogs={filteredLogs}
                   />
                   <DataTable
                     columns={columns}
@@ -290,6 +285,13 @@ export default function SpendLogsTable({ accessToken, token, userRole, userID, p
                     getRowId={(row) => row.request_id}
                     onRowClick={handleRowClick}
                     isLoading={isLogsLoading}
+                  />
+                  <LogTablePagination
+                    currentPage={currentPage}
+                    onCurrentPageChange={setCurrentPage}
+                    pageSize={pageSize}
+                    isLoading={isLogsLoading}
+                    filteredLogs={filteredLogs}
                   />
                 </div>
               </>
