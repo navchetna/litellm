@@ -299,17 +299,7 @@ const ModelsAndEndpointsView: React.FC<ModelDashboardProps> = ({ premiumUser, te
     <div className="mx-4 h-[75vh]">
       <Grid numItems={1} className="gap-2 p-8 w-full mt-2">
         <Col numColSpan={1} className="flex flex-col gap-2">
-          {/* Model Management Header */}
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h2 className="text-lg font-semibold">Model Management</h2>
-              {!all_admin_roles.includes(userRole) ? (
-                <p className="text-sm text-gray-600">Add models for teams you are an admin for.</p>
-              ) : (
-                <p className="text-sm text-gray-600">Add and manage models for the proxy</p>
-              )}
-            </div>
-          </div>
+          {/* Model Management Header - removed, will be integrated with tabs */}
 
           {/* Cost Optimization Feedback Banner */}
           <CostOptimizationFeedbackBanner />
@@ -381,14 +371,6 @@ const ModelsAndEndpointsView: React.FC<ModelDashboardProps> = ({ premiumUser, te
               if (isAdmin) {
                 visibleTabs.push(
                   {
-                    tab: <Tab key="llm-credentials">LLM Credentials</Tab>,
-                    panel: (
-                      <TabPanel key="llm-credentials">
-                        <CredentialsPanel uploadProps={uploadProps} />
-                      </TabPanel>
-                    ),
-                  },
-                  {
                     tab: <Tab key="pass-through">Pass-Through Endpoints</Tab>,
                     panel: (
                       <TabPanel key="pass-through">
@@ -458,15 +440,17 @@ const ModelsAndEndpointsView: React.FC<ModelDashboardProps> = ({ premiumUser, te
                 );
               }
               return (
-                <TabGroup
-                  index={selectedTabIndex}
-                  onIndexChange={setSelectedTabIndex}
-                  className="gap-2 h-[75vh] w-full "
-                >
-                  <TabList className="flex justify-between mt-2 w-full items-center">
-                    <div className="flex">{visibleTabs.map((t) => t.tab)}</div>
-
-                    <div className="flex items-center space-x-2 self-center">
+                <div className="flex flex-col gap-2 h-[75vh] w-full">
+                  <div className="flex items-center justify-between px-6 pt-4">
+                    <div>
+                      <h1 className="text-2xl font-semibold text-gray-900">Models & Endpoints</h1>
+                      {!all_admin_roles.includes(userRole) ? (
+                        <p className="text-sm text-gray-600">Add models for teams you are an admin for</p>
+                      ) : (
+                        <p className="text-sm text-gray-600">Add and manage models for the proxy</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4">
                       {lastRefreshed && <span className="text-xs text-gray-500">Last Refreshed: {lastRefreshed}</span>}
                       <Icon
                         icon={RefreshIcon}
@@ -476,9 +460,18 @@ const ModelsAndEndpointsView: React.FC<ModelDashboardProps> = ({ premiumUser, te
                         onClick={handleRefreshClick}
                       />
                     </div>
-                  </TabList>
-                  <TabPanels>{visibleTabs.map((t) => t.panel)}</TabPanels>
-                </TabGroup>
+                  </div>
+                  <TabGroup
+                    index={selectedTabIndex}
+                    onIndexChange={setSelectedTabIndex}
+                    className="flex-1"
+                  >
+                    <TabList className="px-6">
+                      {visibleTabs.map((t) => t.tab)}
+                    </TabList>
+                    <TabPanels className="h-full">{visibleTabs.map((t) => t.panel)}</TabPanels>
+                  </TabGroup>
+                </div>
               );
             })()
           )}
