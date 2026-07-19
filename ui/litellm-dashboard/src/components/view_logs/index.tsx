@@ -1,5 +1,5 @@
 import moment from "moment";
-import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@tremor/react";
 import { internalUserRoles } from "../../utils/roles";
 import DeletedKeysPage from "../DeletedKeysPage/DeletedKeysPage";
@@ -18,6 +18,10 @@ import { LogsTableToolbar } from "./LogsTableToolbar";
 import { LogTablePagination } from "./LogTablePagination";
 import { DataTable } from "./table";
 import { AntDLoadingSpinner } from "../ui/AntDLoadingSpinner";
+import { useKeyboardNav } from "./useKeyboardNav";
+import { KeyboardShortcutsModal } from "./KeyboardShortcutsModal";
+import { EmptyState, type EmptyStateVariant } from "./EmptyState";
+import { getTimeRangeDisplay } from "./logs_utils";
 
 interface SpendLogsTableProps {
   accessToken: string | null;
@@ -46,6 +50,9 @@ export default function SpendLogsTable({ accessToken, token, userRole, userID, p
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [sortBy, setSortBy] = useState<LogsSortField>("startTime");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -212,6 +219,72 @@ export default function SpendLogsTable({ accessToken, token, userRole, userID, p
   const isRefiltering = logsQuery.isPlaceholderData;
   const isLogsLoading = logsQuery.isLoading || isRefiltering;
 
+  const { selectedIndex, setSelectedIndex } = useKeyboardNav({
+    data: deferredData,
+    onSelectLog: (log) => {
+      setSelectedSessionId(null);
+      setSelectedLog(log);
+    },
+    onOpenDrawer: () => setIsDrawerOpen(true),
+    onCloseDrawer: () => {
+      setIsDrawerOpen(false);
+      setSelectedSessionId(null);
+    },
+    searchInputRef,
+    onToggleLive: () => setIsLiveTail(!isLiveTail),
+    onShowHelp: () => setShowKeyboardHelp(true),
+    isDrawerOpen,
+    enabled: activeTab === "request logs",
+  });
+
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [deferredData, setSelectedIndex]);
+
+  const hasActiveFilters = useMemo(() => {
+    return (
+      searchTerm ||
+      Object.values(filters).some((value) => value !== "") ||
+      filterByCurrentUser
+    );
+  }, [searchTerm, filters, filterByCurrentUser]);
+
+  const activeFiltersList = useMemo(() => {
+    const filterList: string[] = [];
+    if (searchTerm) filterList.push(`search: "${searchTerm}"`);
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) filterList.push(`${key}: "${value}"`);
+    });
+    if (filterByCurrentUser) filterList.push("current user only");
+    return filterList;
+  }, [searchTerm, filters, filterByCurrentUser]);
+
+  const getEmptyStateVariant = (): EmptyStateVariant => {
+    if (hasActiveFilters) {
+      return "filtered-empty";
+    }
+    if (filteredLogs.total === 0 && !logsQuery.isLoading) {
+      return "first-time";
+    }
+    return "no-logs-in-range";
+  };
+
+  const timeRangeDisplay = getTimeRangeDisplay(isCustomDate, startTime, endTime);
+
+  const emptyStateComponent = (
+    <EmptyState
+      variant={getEmptyStateVariant()}
+      timeRange={timeRangeDisplay}
+      activeFilters={activeFiltersList}
+      onResetFilters={handleFilterReset}
+      onExpandTimeRange={() => {
+        const newStart = moment(startTime).subtract(7, "days").format("YYYY-MM-DDTHH:mm");
+        setStartTime(newStart);
+        setIsCustomDate(true);
+      }}
+    />
+  );
+
   if (!accessToken || !token || !userRole || !userID) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -276,6 +349,7 @@ export default function SpendLogsTable({ accessToken, token, userRole, userID, p
                     isLiveTail={isLiveTail}
                     onIsLiveTailChange={setIsLiveTail}
                     onCurrentPageChange={setCurrentPage}
+                    searchInputRef={searchInputRef}
                   />
                   <DataTable
                     columns={columns}
@@ -284,6 +358,8 @@ export default function SpendLogsTable({ accessToken, token, userRole, userID, p
                     onRowClick={handleRowClick}
                     isLoading={isLogsLoading}
                     isSessionRow={(row) => !!row.session_id && (row.session_total_count || 1) > 1}
+                    selectedIndex={selectedIndex}
+                    emptyStateComponent={emptyStateComponent}
                   />
                   <LogTablePagination
                     currentPage={currentPage}
@@ -329,6 +405,8 @@ export default function SpendLogsTable({ accessToken, token, userRole, userID, p
         onSelectLog={setSelectedLog}
         startTime={moment(startTime).utc().format("YYYY-MM-DD HH:mm:ss")}
       />
+
+      <KeyboardShortcutsModal open={showKeyboardHelp} onClose={() => setShowKeyboardHelp(false)} />
     </div>
   );
 }

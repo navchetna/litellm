@@ -187,7 +187,7 @@ const CardRow = ({ row }: { row: LogEntry }) => {
                   <span className="text-base font-medium text-gray-900">
                     {row.model}
                   </span>
-                  <span className="text-sm text-gray-500">· {providerInfo.name || provider}</span>
+                  <span className="text-sm text-gray-500">· {providerInfo.displayName || provider}</span>
                   {isHighCost && <HighCostBadge />}
                   {isSlow && <SlowBadge />}
                 </div>

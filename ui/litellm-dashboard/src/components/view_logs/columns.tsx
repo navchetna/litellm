@@ -1,6 +1,6 @@
 import { DateCell, IdCell, MoneyCell, StatusBadge } from "@/components/shared/table_cells";
 import { getSpendString } from "@/utils/dataUtils";
-import type { ColumnDef } from "@tantml:parameter>
+import type { ColumnDef } from "@tanstack/react-table";
 import { Tooltip } from "antd";
 import React from "react";
 import moment from "moment";
@@ -220,7 +220,7 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
 
       return (
         <div className="flex flex-col gap-1">
-          <IdCell value={sessionId} onClick={row.onSessionClick} />
+          <IdCell value={sessionId} onClick={row.onSessionClick} copyable />
           {isSession && (
             <button
               onClick={(e) => {
@@ -240,7 +240,7 @@ export const createColumns = (sortProps?: LogsSortProps): ColumnDef<LogEntry>[] 
   {
     header: "Request ID",
     accessorKey: "request_id",
-    cell: (info: any) => <IdCell value={info.getValue()} variant="plain" />,
+    cell: (info: any) => <IdCell value={info.getValue()} variant="plain" copyable />,
   },
   {
     header: sortProps

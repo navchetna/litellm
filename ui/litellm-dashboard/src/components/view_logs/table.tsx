@@ -12,6 +12,7 @@ import {
 } from "@tanstack/react-table";
 
 import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from "@/components/ui/table";
+import { LogTableSkeleton } from "./LogTableSkeleton";
 
 declare module "@tanstack/react-table" {
   interface ColumnMeta<TData extends RowData, TValue> {
@@ -34,6 +35,10 @@ interface DataTableProps<TData, TValue> {
   enableSorting?: boolean;
   /** Returns true if the row should be styled as a session row */
   isSessionRow?: (row: TData) => boolean;
+  /** Index of the currently selected row for keyboard navigation */
+  selectedIndex?: number;
+  /** Custom empty state component to show when there's no data */
+  emptyStateComponent?: React.ReactNode;
 }
 
 export function DataTable<TData, TValue>({
@@ -48,6 +53,8 @@ export function DataTable<TData, TValue>({
   noDataMessage = "No results",
   enableSorting = false,
   isSessionRow,
+  selectedIndex = -1,
+  emptyStateComponent,
 }: DataTableProps<TData, TValue>) {
   const supportsExpansion = !!renderSubComponent && !!getRowCanExpand;
   const hasExplicitColumnSizes = columns.some((column) => column.size !== undefined);
@@ -111,23 +118,21 @@ export function DataTable<TData, TValue>({
         </TableHeader>
         <TableBody>
           {isLoading ? (
-            <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={columns.length} className="h-8 text-center">
-                <div className="text-center text-muted-foreground">
-                  <p>{loadingMessage}</p>
-                </div>
-              </TableCell>
-            </TableRow>
+            <LogTableSkeleton columns={columns.length} rows={5} />
           ) : table.getRowModel().rows.length > 0 ? (
-            table.getRowModel().rows.map((row) => {
+            table.getRowModel().rows.map((row, index) => {
               const isSession = isSessionRow?.(row.original) || false;
+              const isSelected = index === selectedIndex;
               return (
                 <Fragment key={row.id}>
                   <TableRow
+                    data-row-index={index}
                     className={`${
                       isSession
                         ? "bg-blue-50/30 hover:bg-blue-50/50 border-l-4 border-l-blue-400"
                         : "hover:bg-gray-50"
+                    } ${
+                      isSelected ? "ring-2 ring-blue-500 ring-inset bg-blue-50/20" : ""
                     } transition-colors ${onRowClick ? "cursor-pointer" : ""}`}
                     onClick={() => onRowClick?.(row.original)}
                   >
@@ -144,19 +149,22 @@ export function DataTable<TData, TValue>({
                     ))}
                   </TableRow>
 
-                {supportsExpansion && row.getIsExpanded() && renderSubComponent && (
-                  <TableRow className="hover:bg-transparent">
-                    <TableCell colSpan={row.getVisibleCells().length} className="p-0">
-                      <div className="w-full max-w-full overflow-hidden box-border">{renderSubComponent({ row })}</div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </Fragment>
-            ))
+                  {supportsExpansion && row.getIsExpanded() && renderSubComponent && (
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell colSpan={row.getVisibleCells().length} className="p-0">
+                        <div className="w-full max-w-full overflow-hidden box-border">{renderSubComponent({ row })}</div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
+              );
+            })
           ) : (
             <TableRow className="hover:bg-transparent">
-              <TableCell colSpan={columns.length} className="h-24 text-center align-middle">
-                <p className="text-sm text-muted-foreground">{noDataMessage}</p>
+              <TableCell colSpan={columns.length} className="text-center align-middle p-0">
+                {emptyStateComponent || (
+                  <p className="text-sm text-muted-foreground py-24">{noDataMessage}</p>
+                )}
               </TableCell>
             </TableRow>
           )}

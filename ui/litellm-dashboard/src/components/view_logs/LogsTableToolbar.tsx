@@ -1,5 +1,5 @@
 import moment from "moment";
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { QUICK_SELECT_OPTIONS } from "./constants";
 import { getTimeRangeDisplay } from "./logs_utils";
 
@@ -17,6 +17,7 @@ interface LogsTableToolbarProps {
   isLiveTail: boolean;
   onIsLiveTailChange: (value: boolean) => void;
   onCurrentPageChange: (updater: number | ((prev: number) => number)) => void;
+  searchInputRef?: React.RefObject<HTMLInputElement>;
 }
 
 export function LogsTableToolbar({
@@ -33,6 +34,7 @@ export function LogsTableToolbar({
   isLiveTail,
   onIsLiveTailChange,
   onCurrentPageChange,
+  searchInputRef,
 }: LogsTableToolbarProps) {
   const [quickSelectOpen, setQuickSelectOpen] = useState(false);
   const quickSelectRef = useRef<HTMLDivElement>(null);
@@ -59,6 +61,7 @@ export function LogsTableToolbar({
           <div className="flex flex-wrap items-center gap-3 w-full max-w-full box-border">
             <div className="relative w-80 min-w-0 shrink-0">
               <input
+                ref={searchInputRef}
                 type="text"
                 placeholder="Search request ID, model, user..."
                 className="w-full px-3 py-2 pl-8 border rounded-md text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
